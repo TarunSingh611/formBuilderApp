@@ -9,7 +9,7 @@ import {
   RefreshControl  
 } from 'react-native';  
 import { useSelector, useDispatch } from 'react-redux';  
-import { getForms } from '../redux/reducers/formSlice';  
+import { fetchForms } from '../redux/reducers/formSlice';  
 
 const FormCard = ({ form, onPress }) => (  
   <TouchableOpacity style={styles.card} onPress={onPress}>  
@@ -33,11 +33,11 @@ const FormsScreen = ({ navigation }) => {
 
   const onRefresh = React.useCallback(() => {  
     setRefreshing(true);  
-    dispatch(getForms()).finally(() => setRefreshing(false));  
+    dispatch(fetchForms()).finally(() => setRefreshing(false));  
   }, [dispatch]);  
 
   React.useEffect(() => {  
-    dispatch(getForms());  
+    dispatch(fetchForms());  
   }, [dispatch]);  
 
   const renderEmptyState = () => (  

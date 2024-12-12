@@ -39,19 +39,16 @@ const LoginScreen = ({ navigation }) => {
     return Object.keys(newErrors).length === 0;  
   };  
 
-  const handleLogin = async () => {  
-    if (validateForm()) {  
-      try {  
-        await dispatch(login(formData));  
-      } catch (error) {  
-        Alert.alert(  
-          'Login Failed',  
-          error.message || 'Please check your credentials and try again'  
-        );  
-      }  
-    }  
-  };  
-
+const handleLogin = async () => {
+  if (validateForm()) {
+    try {
+      await dispatch(loginUser(formData)).unwrap();
+      navigation.navigate('Home'); // Navigate to home on successful login
+    } catch (error) {
+      Alert.alert('Login Failed', error.message || 'Please check your credentials and try again');
+    }
+  }
+};
   return (  
     <KeyboardAvoidingView   
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}  

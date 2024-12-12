@@ -29,13 +29,14 @@ const ResponseCard = ({ response }) => (
 );  
 
 const FormResponsesScreen = ({ route }) => {  
-  const { formId } = route.params;  
-  const dispatch = useDispatch();  
-  const { responses, loading } = useSelector(state => state.form);  
+  const { formId } = route.params;
+  const dispatch = useDispatch();
+  const { responses, loading } = useSelector(state => state.forms);
 
-  useEffect(() => {  
-    dispatch(getFormResponses(formId));  
-  }, [formId]);  
+  useEffect(() => {
+    dispatch(getFormResponses(formId));
+  }, [formId, dispatch]);
+
 
   if (loading) {  
     return (  

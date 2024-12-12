@@ -1,4 +1,5 @@
-// mobile/src/screens/FormBuilder/index.js  
+// src/screens/FormBuilder/index.jsx
+
 import React, { useState, useRef } from 'react';
 import {
     View,
@@ -7,6 +8,9 @@ import {
     TouchableOpacity,
     TextInput,
     Image,
+    StyleSheet,
+    Animated,
+    Alert,
 } from 'react-native';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
@@ -14,11 +18,58 @@ import DraggableFlatList from 'react-native-draggable-flatlist';
 import { useDispatch } from 'react-redux';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
+import { Button, Card } from '@rneui/themed';
+import { createForm } from '../redux/reducers/formSlice';
+
+const FormBuilderSchema = Yup.object().shape({
+    title: Yup.string().required('Title is required'),
+    description: Yup.string(),
+});
 
 const FormBuilder = ({ navigation }) => {
     const [questions, setQuestions] = useState([]);
     const [headerImage, setHeaderImage] = useState(null);
     const scrollViewRef = useRef(null);
+    const dispatch = useDispatch();
+
+    const formik = useFormik({
+        initialValues: {
+            title: '',
+            description: '',
+        },
+        validationSchema: FormBuilderSchema,
+        onSubmit: async (values) => {
+            try {
+                const formData = {
+                    ...values,
+                    headerImage,
+                    questions,
+                };
+                await dispatch(createForm(formData)).unwrap();
+                Alert.alert('Success', 'Form created successfully');
+                navigation.goBack();
+            } catch (error) {
+                Alert.alert('Error', error.message || 'Failed to create form');
+            }
+        },
+    });
+
+    const pickImage = async (questionId = null) => {
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [16, 9],
+            quality: 1,
+        });
+
+        if (!result.canceled) {
+            if (questionId) {
+                updateQuestion(questionId, { image: result.assets[0].uri });
+            } else {
+                setHeaderImage(result.assets[0].uri);
+            }
+        }
+    };
 
     const addQuestion = (type) => {
         const newQuestion = {
@@ -43,49 +94,49 @@ const FormBuilder = ({ navigation }) => {
     };
 
     const removeQuestion = (id) => {
-        setQuestions(questions.filter((q) => q.id !== id));
+        Alert.alert(
+            'Delete Question',
+            'Are you sure you want to delete this question?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: () => setQuestions(questions.filter((q) => q.id !== id)),
+                },
+            ]
+        );
     };
 
-    const pickImage = async (questionId = null) => {
-        const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: true,
-            aspect: [4, 3],
-            quality: 1,
-        });
+    const renderQuestionCard = ({ item, drag, isActive }) => (
+        <Animated.View
+            style={[
+                styles.questionCard,
+                {
+                    opacity: isActive ? 0.7 : 1,
+                    transform: [{
+                        scale: isActive ? 0.95 : 1,
+                    }],
+                    elevation: isActive ? 8 : 4,
+                },
+            ]}
+        >
+            <Card>
+                <TouchableOpacity onLongPress={drag} disabled={isActive}>
+                    <View style={styles.questionHeader}>
+                        <Ionicons name="menu" size={24} color="#666" />
+                        <Text style={styles.questionType}>{item.type}</Text>
+                        <TouchableOpacity onPress={() => removeQuestion(item.id)}>
+                            <Ionicons name="trash-outline" size={24} color="#ff4444" />
+                        </TouchableOpacity>
+                    </View>
 
-        if (!result.cancelled) {
-            if (questionId) {
-                updateQuestion(questionId, { image: result.uri });
-            } else {
-                setHeaderImage(result.uri);
-            }
-        }
-    };
-
-    const renderQuestion = ({ item, drag, isActive }) => {
-        return (
-            <Animated.View
-                style={[
-                    styles.questionContainer,
-                    {
-                        opacity: isActive ? 0.5 : 1,
-                        transform: [{
-                            scale: isActive ? 0.95 : 1,
-                        }],
-                    },
-                ]}
-            >
-                <TouchableOpacity onLongPress={drag} style={styles.dragHandle}>
-                    <Ionicons name="menu" size={24} color="#666" />
-                </TouchableOpacity>
-
-                <View style={styles.questionContent}>
                     <TextInput
                         style={styles.questionInput}
                         value={item.question}
                         onChangeText={(text) => updateQuestion(item.id, { question: text })}
                         placeholder="Enter your question"
+                        multiline
                     />
 
                     {item.image && (
@@ -96,126 +147,142 @@ const FormBuilder = ({ navigation }) => {
                         style={styles.imageButton}
                         onPress={() => pickImage(item.id)}
                     >
-                        <Ionicons name="image" size={24} color="#007AFF" />
+                        <Ionicons name="image-outline" size={24} color="#2196F3" />
                         <Text style={styles.imageButtonText}>
                             {item.image ? 'Change Image' : 'Add Image'}
                         </Text>
                     </TouchableOpacity>
 
-                    {item.type === 'checkbox' && (
-                        <View style={styles.optionsContainer}>
-                            {item.options.map((option, index) => (
-                                <View key={index} style={styles.optionRow}>
-                                    <TextInput
-                                        style={styles.optionInput}
-                                        value={option}
-                                        onChangeText={(text) => {
-                                            const newOptions = [...item.options];
-                                            newOptions[index] = text;
-                                            updateQuestion(item.id, { options: newOptions });
-                                        }}
-                                        placeholder={`Option ${index + 1}`}
-                                    />
-                                    <TouchableOpacity
-                                        onPress={() => {
-                                            const newOptions = item.options.filter((_, i) => i !== index);
-                                            updateQuestion(item.id, { options: newOptions });
-                                        }}
-                                    >
-                                        <Ionicons name="close-circle" size={24} color="red" />
-                                    </TouchableOpacity>
-                                </View>
-                            ))}
-                            <TouchableOpacity
-                                style={styles.addOptionButton}
-                                onPress={() => {
-                                    const newOptions = [...item.options, `Option ${item.options.length + 1}`];
-                                    updateQuestion(item.id, { options: newOptions });
-                                }}
-                            >
-                                <Text style={styles.addOptionText}>Add Option</Text>
-                            </TouchableOpacity>
-                        </View>
-                    )}
+                    {renderQuestionOptions(item)}
+                </TouchableOpacity>
+            </Card>
+        </Animated.View>
+    );
 
-                    <TouchableOpacity
-                        style={styles.deleteButton}
-                        onPress={() => removeQuestion(item.id)}
-                    >
-                        <Ionicons name="trash" size={24} color="red" />
-                    </TouchableOpacity>
-                </View>
-            </Animated.View>
-        );
+    const renderQuestionOptions = (question) => {
+        switch (question.type) {
+            case 'checkbox':
+                return (
+                    <View style={styles.optionsContainer}>
+                        {question.options.map((option, index) => (
+                            <View key={index} style={styles.optionRow}>
+                                <TextInput
+                                    style={styles.optionInput}
+                                    value={option}
+                                    onChangeText={(text) => {
+                                        const newOptions = [...question.options];
+                                        newOptions[index] = text;
+                                        updateQuestion(question.id, { options: newOptions });
+                                    }}
+                                    placeholder={`Option ${index + 1}`}
+                                />
+                                <TouchableOpacity
+                                    onPress={() => {
+                                        const newOptions = question.options.filter((_, i) => i !== index);
+                                        updateQuestion(question.id, { options: newOptions });
+                                    }}
+                                >
+                                    <Ionicons name="close-circle" size={24} color="#ff4444" />
+                                </TouchableOpacity>
+                            </View>
+                        ))}
+                        <Button
+                            title="Add Option"
+                            type="outline"
+                            onPress={() => {
+                                const newOptions = [...question.options, `Option ${question.options.length + 1}`];
+                                updateQuestion(question.id, { options: newOptions });
+                            }}
+                            icon={<Ionicons name="add" size={24} color="#2196F3" />}
+                        />
+                    </View>
+                );
+            case 'grid':
+                return (
+                    <View style={styles.gridContainer}>
+                        <Text style={styles.gridLabel}>Grid Options</Text>
+                        {/* Implement grid options UI */}
+                    </View>
+                );
+            default:
+                return null;
+        }
     };
 
     return (
         <View style={styles.container}>
             <ScrollView ref={scrollViewRef}>
-                <View style={styles.header}>
+                <Card containerStyle={styles.headerCard}>
                     <TextInput
                         style={styles.titleInput}
                         placeholder="Form Title"
                         value={formik.values.title}
                         onChangeText={formik.handleChange('title')}
+                        onBlur={formik.handleBlur('title')}
+                    />
+                    {formik.touched.title && formik.errors.title && (
+                        <Text style={styles.errorText}>{formik.errors.title}</Text>
+                    )}
+
+                    <TextInput
+                        style={styles.descriptionInput}
+                        placeholder="Form Description (optional)"
+                        value={formik.values.description}
+                        onChangeText={formik.handleChange('description')}
+                        multiline
                     />
 
                     {headerImage && (
                         <Image source={{ uri: headerImage }} style={styles.headerImage} />
                     )}
 
-                    <TouchableOpacity
-                        style={styles.headerImageButton}
+                    <Button
+                        title={headerImage ? "Change Header Image" : "Add Header Image"}
+                        icon={<Ionicons name="image-outline" size={24} color="white" />}
                         onPress={() => pickImage()}
-                    >
-                        <Ionicons name="image" size={24} color="#007AFF" />
-                        <Text style={styles.headerImageButtonText}>
-                            {headerImage ? 'Change Header Image' : 'Add Header Image'}
-                        </Text>
-                    </TouchableOpacity>
-                </View>
+                        type="outline"
+                        containerStyle={styles.imageButton}
+                    />
+                </Card>
 
                 <DraggableFlatList
                     data={questions}
-                    renderItem={renderQuestion}
+                    renderItem={renderQuestionCard}
                     keyExtractor={(item) => item.id}
                     onDragEnd={({ data }) => setQuestions(data)}
                 />
 
-                <View style={styles.addQuestionContainer}>
-                    <TouchableOpacity
-                        style={styles.addQuestionButton}
-                        onPress={() => addQuestion('text')}
-                    >
-                        <Ionicons name="text" size={24} color="#fff" />
-                        <Text style={styles.addQuestionButtonText}>Add Text Question</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={styles.addQuestionButton}
-                        onPress={() => addQuestion('grid')}
-                    >
-                        <Ionicons name="grid" size={24} color="#fff" />
-                        <Text style={styles.addQuestionButtonText}>Add Grid Question</Text>
-                    </TouchableOpacity>
-
-          // mobile/src/screens/FormBuilder/index.js (continued)
-                    <TouchableOpacity
-                        style={styles.addQuestionButton}
-                        onPress={() => addQuestion('checkbox')}
-                    >
-                        <Ionicons name="checkbox" size={24} color="#fff" />
-                        <Text style={styles.addQuestionButtonText}>Add Checkbox Question</Text>
-                    </TouchableOpacity>
+                <View style={styles.addQuestionSection}>
+                    <Text style={styles.addQuestionTitle}>Add Question</Text>
+                    <View style={styles.questionTypeButtons}>
+                        {['Text', 'Checkbox', 'Grid'].map((type) => (
+                            <Button
+                                key={type}
+                                title={type}
+                                icon={<Ionicons name={getQuestionTypeIcon(type)} size={24} color="white" />}
+                                onPress={() => addQuestion(type.toLowerCase())}
+                                containerStyle={styles.questionTypeButton}
+                            />
+                        ))}
+                    </View>
                 </View>
-
-                <TouchableOpacity
-                    style={styles.submitButton}
-                    onPress={formik.handleSubmit}
-                >
-                    <Text style={styles.submitButtonText}>Create Form</Text>
-                </TouchableOpacity>
             </ScrollView>
+
+            <View style={styles.footer}>
+                <Button
+                    title="Preview"
+                    icon={<Ionicons name="eye-outline" size={24} color="white" />}
+                    onPress={() => navigation.navigate('FormPreview', { questions })}
+                    containerStyle={styles.footerButton}
+                />
+                <Button
+                    title="Save"
+                    icon={<Ionicons name="save-outline" size={24} color="white" />}
+                    onPress={formik.handleSubmit}
+                    containerStyle={styles.footerButton}
+                    loading={formik.isSubmitting}
+                />
+            </View>
         </View>
     );
 };
@@ -223,96 +290,90 @@ const FormBuilder = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: '#f5f5f5',
     },
-    header: {
-        padding: 20,
-        borderBottomWidth: 1,
-        borderBottomColor: '#eee',
+    headerCard: {
+        margin: 16,
+        borderRadius: 12,
+        elevation: 4,
     },
     titleInput: {
         fontSize: 24,
         fontWeight: 'bold',
-        marginBottom: 15,
+        marginBottom: 8,
+        padding: 8,
+    },
+    descriptionInput: {
+        fontSize: 16,
+        marginBottom: 16,
+        padding: 8,
+        minHeight: 60,
     },
     headerImage: {
         width: '100%',
         height: 200,
-        borderRadius: 10,
-        marginBottom: 15,
-    },
-    headerImageButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 10,
-        backgroundColor: '#f5f5f5',
         borderRadius: 8,
+        marginBottom: 16,
     },
-    questionContainer: {
-        backgroundColor: '#fff',
-        margin: 10,
-        padding: 15,
-        borderRadius: 10,
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
-        elevation: 5,
+    questionCard: {
+        margin: 8,
+        borderRadius: 12,
     },
-    dragHandle: {
-        padding: 10,
+    questionHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
         alignItems: 'center',
-    },
-    questionContent: {
-        flex: 1,
+        marginBottom: 16,
     },
     questionInput: {
         fontSize: 16,
-        marginBottom: 10,
-    },
-    questionImage: {
-        width: '100%',
-        height: 150,
+        padding: 8,
+        backgroundColor: '#f8f8f8',
         borderRadius: 8,
-        marginBottom: 10,
+        marginBottom: 16,
     },
     optionsContainer: {
-        marginTop: 10,
+        marginTop: 8,
+        gap: 8,
     },
     optionRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 10,
+        marginBottom: 8,
     },
     optionInput: {
         flex: 1,
-        marginRight: 10,
+        marginRight: 8,
         padding: 8,
         backgroundColor: '#f5f5f5',
-        borderRadius: 5,
+        borderRadius: 8,
     },
-    addOptionButton: {
-        padding: 10,
-        backgroundColor: '#e3e3e3',
-        borderRadius: 5,
-        alignItems: 'center',
-        marginTop: 10,
+    addQuestionSection: {
+        padding: 16,
+        marginTop: 16,
     },
-    submitButton: {
-        backgroundColor: '#007AFF',
-        padding: 15,
-        margin: 20,
-        borderRadius: 10,
-        alignItems: 'center',
+    questionTypeButtons: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        flexWrap: 'wrap',
+        gap: 8,
     },
-    submitButtonText: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: 'bold',
+    footer: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        padding: 16,
+        backgroundColor: 'white',
+        borderTopWidth: 1,
+        borderTopColor: '#eee',
+    },
+    footerButton: {
+        width: '45%',
+    },
+    errorText: {
+        color: '#ff4444',
+        fontSize: 12,
+        marginBottom: 8,
     },
 });
 
-export default FormBuilder;  
+export default FormBuilder;
