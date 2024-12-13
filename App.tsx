@@ -7,6 +7,8 @@
 
 import React from 'react';
 import type {PropsWithChildren} from 'react';
+import 'react-native-gesture-handler';
+import 'react-native-reanimated';
 import {
   StyleSheet,
   Text,

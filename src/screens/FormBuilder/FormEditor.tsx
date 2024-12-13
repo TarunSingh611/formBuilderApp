@@ -10,14 +10,14 @@ import {
     Image,
 } from 'react-native';
 import { Button, Card, Text } from '@rneui/themed';
-import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
+// import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useFormBuilder } from '../../hooks/useFormBuilder';
 import FormQuestion from '../../components/FormQuestion';
 import { Question } from '../../type/form';
 
-export const FormEditor = ({ navigation }: any) => {
+const FormEditor = ({ navigation }: any) => {
     const {
         form,
         updateForm,
@@ -29,22 +29,22 @@ export const FormEditor = ({ navigation }: any) => {
         loading,
     } = useFormBuilder();
 
-    const handlePickImage = async () => {
-        try {
-            const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                allowsEditing: true,
-                aspect: [16, 9],
-                quality: 1,
-            });
+    // const handlePickImage = async () => {
+    //     try {
+    //         const result = await ImagePicker.launchImageLibraryAsync({
+    //             mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    //             allowsEditing: true,
+    //             aspect: [16, 9],
+    //             quality: 1,
+    //         });
 
-            if (!result.canceled && result.assets[0]) {
-                updateForm({ headerImage: result.assets[0].uri });
-            }
-        } catch (error) {
-            Alert.alert('Error', 'Failed to pick image');
-        }
-    };
+    //         if (!result.canceled && result.assets[0]) {
+    //             updateForm({ headerImage: result.assets[0].uri });
+    //         }
+    //     } catch (error) {
+    //         Alert.alert('Error', 'Failed to pick image');
+    //     }
+    // };
 
     const handleAddQuestion = useCallback((type: Question['type']) => {
         const newQuestion: Question = {
@@ -71,17 +71,17 @@ export const FormEditor = ({ navigation }: any) => {
         }
     }, [form.questions, removeQuestion]);
 
-    const renderQuestion = useCallback(({ item, drag, isActive }: RenderItemParams<Question>) => (
-        <FormQuestion
-        onUpdate={updateQuestion}
-        onDelete={handleQuestionDelete}
-        onDragStart={drag}
-        isActive={isActive}
-        question={{ ...item,
-            _id: item._id || String(Date.now()),
-        }}
-        />
-    ), [updateQuestion, handleQuestionDelete]);
+    // const renderQuestion = useCallback(({ item, drag, isActive }: RenderItemParams<any>) => (
+    // //     <FormQuestion
+    // //     onUpdate={updateQuestion}
+    // //     onDelete={handleQuestionDelete}
+    // //     onDragStart={drag}
+    // //     isActive={isActive}
+    // //     question={{ ...item,
+    // //         _id: item._id || String(Date.now()),
+    // //     }}
+    // //     />
+    // ), [updateQuestion, handleQuestionDelete]);
 
     const handleReorder = useCallback(({ data, from, to }: { data: Question[], from: number, to: number }) => {
         reorderQuestions(from, to);
@@ -120,19 +120,19 @@ export const FormEditor = ({ navigation }: any) => {
                     <Button
                         title={form.headerImage ? "Change Header Image" : "Add Header Image"}
                         icon={<Ionicons name="image-outline" size={24} color="white" />}
-                        onPress={handlePickImage}
+                        // onPress={handlePickImage}
                         type="outline"
                         buttonStyle={styles.imageButtonStyle}
                         containerStyle={styles.imageButtonContainer}
                     />
                 </Card>
-
+{/* 
                 <DraggableFlatList
                     data={form.questions}
                     renderItem={renderQuestion}
                     keyExtractor={(item) => item._id || String(Date.now())}
                     onDragEnd={handleReorder}
-                />
+                /> */}
 
                 <View style={styles.addQuestionSection}>
                     <Text style={styles.addQuestionTitle}>Add Question</Text>
@@ -149,6 +149,7 @@ export const FormEditor = ({ navigation }: any) => {
                     </View>
                 </View>
             </ScrollView>
+            <Text>Editor</Text>
 
             <View style={styles.footer}>
                 <Button
@@ -165,6 +166,7 @@ export const FormEditor = ({ navigation }: any) => {
                     loading={loading}
                 />
             </View>
+            <Text>VIew</Text>
         </View>
     );
 };

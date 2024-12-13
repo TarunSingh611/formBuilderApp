@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, ScrollView, Alert } from 'react-native';
 import { useDispatch } from 'react-redux';
-import { submitFormResponse } from '../redux/reducers/formSlice';
-import FormQuestion from '../components/FormQuestion';
+import { submitFormResponse } from '../../redux/reducers/formSlice';
+import { StyleSheet } from 'react-native';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 
 const FormPreviewScreen = ({ route, navigation }) => {
@@ -15,7 +15,7 @@ const FormPreviewScreen = ({ route, navigation }) => {
   const validateResponses = () => {
     const requiredQuestions = currentForm.questions.filter(q => q.required);
     const missingRequired = requiredQuestions.find(q => !responses[q._id]);
-    
+
     if (missingRequired) {
       Alert.alert('Error', 'Please answer all required questions');
       return false;
@@ -25,14 +25,14 @@ const FormPreviewScreen = ({ route, navigation }) => {
 
   const handleSubmit = async () => {
     if (!validateResponses()) return;
-    
+
     setIsSubmitting(true);
     try {
       await dispatch(submitFormResponse({
         formId: currentForm._id,
         responses
       })).unwrap();
-      
+
       Alert.alert('Success', 'Form submitted successfully', [
         { text: 'OK', onPress: () => navigation.goBack() }
       ]);
@@ -81,7 +81,6 @@ const FormPreviewScreen = ({ route, navigation }) => {
 
   return (
     <View style={styles.container}>
-      <ProgressBar progress={progress} />
       <ScrollView>
         {currentForm.questions.map((question) => (
           <FormQuestion
@@ -98,7 +97,7 @@ const FormPreviewScreen = ({ route, navigation }) => {
           />
         ))}
       </ScrollView>
-      <SubmitButton 
+      <SubmitButton
         onPress={handleSubmit}
         disabled={isSubmitting}
       />
@@ -155,5 +154,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
+
 
 export default FormPreviewScreen;
