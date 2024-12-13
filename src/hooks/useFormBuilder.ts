@@ -25,8 +25,8 @@ export const useFormBuilder = () => {
     [dispatch]  
   );  
 
-  const handleAddQuestion = useCallback(() => {  
-    dispatch(addQuestion());  
+  const handleAddQuestion = useCallback((newQuestion: Question) => {  
+    dispatch(addQuestion(newQuestion));  
   }, [dispatch]);  
 
   const handleRemoveQuestion = useCallback(  
@@ -37,7 +37,7 @@ export const useFormBuilder = () => {
   );  
 
   const handleUpdateQuestion = useCallback(  
-    (index: number, updates: Partial<Question>) => {  
+    (index: any, updates: Partial<Question>) => {  
       dispatch(updateQuestion({ index, updates }));  
     },  
     [dispatch]  
