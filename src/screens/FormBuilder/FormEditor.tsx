@@ -1,5 +1,5 @@
 // src/screens/FormBuilder/FormEditor.tsx
-
+import { launchImageLibrary } from 'react-native-image-picker';
 import React, { useCallback, useState } from 'react';
 import {
     View,
@@ -10,10 +10,9 @@ import {
     Image,
 } from 'react-native';
 import { Button, Card, Text } from '@rneui/themed';
-// import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
 import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
 import { useFormBuilder } from '../../hooks/useFormBuilder';
+import { FlatList, TouchableOpacity } from 'react-native';
 import FormQuestion from '../../components/FormQuestion';
 import { Question } from '../../type/form';
 
@@ -29,23 +28,34 @@ const FormEditor = ({ navigation }: any) => {
         loading,
     } = useFormBuilder();
 
-    // const handlePickImage = async () => {
-    //     try {
-    //         const result = await ImagePicker.launchImageLibraryAsync({
-    //             mediaTypes: ImagePicker.MediaTypeOptions.Images,
-    //             allowsEditing: true,
-    //             aspect: [16, 9],
-    //             quality: 1,
-    //         });
 
-    //         if (!result.canceled && result.assets[0]) {
-    //             updateForm({ headerImage: result.assets[0].uri });
-    //         }
-    //     } catch (error) {
-    //         Alert.alert('Error', 'Failed to pick image');
-    //     }
-    // };
+const handlePickImage = async () => {
+    try {
+        const result = await launchImageLibrary({
+            mediaType: 'photo',
+            quality: 1,
+        });
 
+        if (result.didCancel) {
+            console.log('User cancelled image picker');
+            return;
+        }
+
+        if (result.assets && result.assets.length > 0) {
+            const selectedImageUri = result.assets[0].uri;
+            if (selectedImageUri) {
+                updateForm({ headerImage: selectedImageUri });
+            }
+        } else {
+            Alert.alert('Error', 'No image selected');
+        }
+    } catch (error) {
+        console.error('Error picking image:', error);
+        Alert.alert('Error', 'Something went wrong while picking the image');
+    }
+};
+
+    
     const handleAddQuestion = useCallback((type: Question['type']) => {
         const newQuestion: Question = {
             _id: Date.now().toString(),
@@ -71,21 +81,26 @@ const FormEditor = ({ navigation }: any) => {
         }
     }, [form.questions, removeQuestion]);
 
-    // const renderQuestion = useCallback(({ item, drag, isActive }: RenderItemParams<any>) => (
-    // //     <FormQuestion
-    // //     onUpdate={updateQuestion}
-    // //     onDelete={handleQuestionDelete}
-    // //     onDragStart={drag}
-    // //     isActive={isActive}
-    // //     question={{ ...item,
-    // //         _id: item._id || String(Date.now()),
-    // //     }}
-    // //     />
-    // ), [updateQuestion, handleQuestionDelete]);
-
     const handleReorder = useCallback(({ data, from, to }: { data: Question[], from: number, to: number }) => {
         reorderQuestions(from, to);
     }, [reorderQuestions]);
+
+    const renderQuestion = ({ item }: { item: Question }) => (
+        <Card containerStyle={styles.questionCard}>
+            <View style={styles.questionHeader}>
+                <Text style={styles.questionTitle}>{item.title || 'Untitled Question'}</Text>
+                <TouchableOpacity onPress={() => handleQuestionDelete(item._id)}>
+                    <Ionicons name="trash-outline" size={24} color="red" />
+                </TouchableOpacity>
+            </View>
+            {/* <FormQuestion
+                question={item}
+                onUpdate={(id, updates) => updateQuestion(id, updates)}
+                onDelete={(id) => handleQuestionDelete(id)}
+                isPreview={false} // Change this to true if you want a preview mode
+            /> */}
+        </Card>
+    );
 
     const handleSave = async () => {
         try {
@@ -120,20 +135,18 @@ const FormEditor = ({ navigation }: any) => {
                     <Button
                         title={form.headerImage ? "Change Header Image" : "Add Header Image"}
                         icon={<Ionicons name="image-outline" size={24} color="white" />}
-                        // onPress={handlePickImage}
+                        onPress={handlePickImage}
                         type="outline"
                         buttonStyle={styles.imageButtonStyle}
                         containerStyle={styles.imageButtonContainer}
                     />
                 </Card>
-{/* 
-                <DraggableFlatList
+                <FlatList
                     data={form.questions}
                     renderItem={renderQuestion}
-                    keyExtractor={(item) => item._id || String(Date.now())}
-                    onDragEnd={handleReorder}
-                /> */}
-
+                    keyExtractor={(item) => item._id}
+                    contentContainerStyle={styles.questionList}
+                />
                 <View style={styles.addQuestionSection}>
                     <Text style={styles.addQuestionTitle}>Add Question</Text>
                     <View style={styles.questionTypeButtons}>
@@ -149,7 +162,6 @@ const FormEditor = ({ navigation }: any) => {
                     </View>
                 </View>
             </ScrollView>
-            <Text>Editor</Text>
 
             <View style={styles.footer}>
                 <Button
@@ -234,6 +246,23 @@ const styles = StyleSheet.create({
     },
     footerButton: {
         width: '45%',
+    },
+    questionList: {
+        paddingHorizontal: 16,
+    },
+    questionCard: {
+        marginBottom: 16,
+        borderRadius: 8,
+        elevation: 3,
+    },
+    questionHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    questionTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
     },
 });
 

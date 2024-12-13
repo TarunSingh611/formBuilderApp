@@ -6,7 +6,7 @@ import { Icon } from '@rneui/themed';
 
 import { HomeScreen } from '../screens/Home';
 import { CreateFormScreen } from '../screens/CreateForm';
-import FormEditor from '../screens/FormBuilder/FormEditor'; 
+// import FormEditor from '../screens/FormBuilder/FormEditor'; 
 import FormPreviewScreen from '../screens/FormPreviewScreen';
 import FormResponsesScreen from '../screens/FormResponsesScreen';
 import ProfileScreen from '../screens/ProfileScreen';
@@ -72,11 +72,11 @@ export const AppNavigator = () => (
       component={CreateFormScreen}
       options={{ title: 'Create Form' }}
     />
-    <Stack.Screen
+    {/* <Stack.Screen
       name="FormEditor"
       component={FormEditor}
       options={{ title: 'Edit Form' }}
-    />
+    /> */}
     <Stack.Screen
       name="FormPreview"
       component={FormPreviewScreen}

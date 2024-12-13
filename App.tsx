@@ -32,6 +32,7 @@ import { store, persistor } from './src/redux/store';
 import { AppNavigator } from './src/navigation';
 import Toast from 'react-native-toast-message';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 
 const LoadingSpinner = () => (
@@ -58,20 +59,22 @@ function App(): React.JSX.Element {
   };
 
   return (
-       <Provider store={store}>
-         <PersistGate loading={<LoadingSpinner />} persistor={persistor}>
-           <QueryClientProvider client={queryClient}>
-             <SafeAreaProvider>
-               <ThemeProvider theme={theme}>
-                 <NavigationContainer>
-                   <AppNavigator/>
-                 </NavigationContainer>
-                 <Toast />
-               </ThemeProvider>
-             </SafeAreaProvider>
-           </QueryClientProvider>
-         </PersistGate>
-       </Provider>
+<GestureHandlerRootView style={{ flex: 1 }}>
+      <Provider store={store}>
+        <PersistGate loading={<LoadingSpinner />} persistor={persistor}>
+          <QueryClientProvider client={queryClient}>
+            <SafeAreaProvider>
+              <ThemeProvider theme={theme}>
+                <NavigationContainer>
+                  <AppNavigator />
+                </NavigationContainer>
+                <Toast />
+              </ThemeProvider>
+            </SafeAreaProvider>
+          </QueryClientProvider>
+        </PersistGate>
+      </Provider>
+    </GestureHandlerRootView>
   );
 }
 

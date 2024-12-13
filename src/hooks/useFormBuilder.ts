@@ -9,8 +9,8 @@ import {
   reorderQuestions,  
   duplicateQuestion,  
   saveFormAsync,  
-  Question,  
 } from '../redux/reducers/formBuilderSlice';  
+import { Question } from '../type/form';
 
 export const useFormBuilder = () => {  
   const dispatch = useDispatch();  
