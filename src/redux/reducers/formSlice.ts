@@ -72,6 +72,18 @@ export const deleteForm = createAsyncThunk('forms/delete', async (formId: string
   return formId;
 });
 
+export const submitFormResponse = createAsyncThunk( 'forms/submitResponse', async ({ formId, responses }:any) => {
+    const response = await formAPI.submitResponse(formId, responses);
+    return response.data;
+  }
+);
+
+export const saveFormProgress = createAsyncThunk( 'forms/saveProgress', async ({ formId, responses }:any) => {
+    const response = await formAPI.saveProgress(formId, responses);
+    return response.data;
+  }
+);
+
 const formSlice = createSlice({
   name: 'forms',
   initialState,

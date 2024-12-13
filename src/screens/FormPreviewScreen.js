@@ -1,73 +1,107 @@
 // src/screens/FormPreviewScreen.js
-import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { useSelector, useDispatch } from 'react-redux';
-import { getFormById, getFormResponses, getFormAnalytics } from '../redux/reducers/formSlice';
+import React, { useState, useEffect } from 'react';
+import { View, ScrollView, Alert } from 'react-native';
+import { useDispatch } from 'react-redux';
+import { submitFormResponse } from '../redux/reducers/formSlice';
 import FormQuestion from '../components/FormQuestion';
+import LoadingSpinner from '../components/common/LoadingSpinner';
 
 const FormPreviewScreen = ({ route, navigation }) => {
-  const { formId } = route.params;
+  const [responses, setResponses] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [progress, setProgress] = useState(0);
   const dispatch = useDispatch();
-  const { currentForm, loading, responses, analytics } = useSelector(state => state.forms);
-  const [userResponses, setUserResponses] = useState({});
 
-  useEffect(() => {
-    dispatch(getFormById(formId));
-    dispatch(getFormResponses(formId));
-    dispatch(getFormAnalytics(formId));
-  }, [formId, dispatch]);
-
-  const handleSubmit = () => {
-    // Implement form submission logic
-    console.log('Form responses:', userResponses);
+  const validateResponses = () => {
+    const requiredQuestions = currentForm.questions.filter(q => q.required);
+    const missingRequired = requiredQuestions.find(q => !responses[q._id]);
+    
+    if (missingRequired) {
+      Alert.alert('Error', 'Please answer all required questions');
+      return false;
+    }
+    return true;
   };
 
-  if (loading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#6366f1" />
-      </View>
-    );
-  }
+  const handleSubmit = async () => {
+    if (!validateResponses()) return;
+    
+    setIsSubmitting(true);
+    try {
+      await dispatch(submitFormResponse({
+        formId: currentForm._id,
+        responses
+      })).unwrap();
+      
+      Alert.alert('Success', 'Form submitted successfully', [
+        { text: 'OK', onPress: () => navigation.goBack() }
+      ]);
+    } catch (error) {
+      Alert.alert('Error', error.message || 'Failed to submit form');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-  if (!currentForm) {
-    return (
-      <View style={styles.centered}>
-        <Text>Form not found</Text>
-      </View>
-    );
+  const saveProgress = async () => {
+    try {
+      await AsyncStorage.setItem(
+        `form_progress_${currentForm._id}`,
+        JSON.stringify(responses)
+      );
+    } catch (error) {
+      console.error('Failed to save progress:', error);
+    }
+  };
+
+  useEffect(() => {
+    const loadProgress = async () => {
+      try {
+        const saved = await AsyncStorage.getItem(`form_progress_${currentForm._id}`);
+        if (saved) {
+          setResponses(JSON.parse(saved));
+        }
+      } catch (error) {
+        console.error('Failed to load progress:', error);
+      }
+    };
+    loadProgress();
+  }, [currentForm._id]);
+
+  useEffect(() => {
+    const answered = Object.keys(responses).length;
+    const total = currentForm.questions.length;
+    setProgress((answered / total) * 100);
+    saveProgress();
+  }, [responses]);
+
+  if (isSubmitting) {
+    return <LoadingSpinner />;
   }
 
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.scrollView}>
-        <View style={styles.header}>
-          <Text style={styles.title}>{currentForm.title}</Text>
-          <Text style={styles.description}>{currentForm.description}</Text>
-        </View>
-
-        <View style={styles.questions}>
-          {currentForm.questions?.map((question) => (
-            <FormQuestion
-              key={question._id}
-              question={question}
-              onChange={(value) => {
-                setUserResponses(prev => ({
-                  ...prev,
-                  [question._id]: value,
-                }));
-              }}
-              value={userResponses[question._id]}
-            />
-          ))}
-        </View>
+      <ProgressBar progress={progress} />
+      <ScrollView>
+        {currentForm.questions.map((question) => (
+          <FormQuestion
+            key={question._id}
+            question={question}
+            value={responses[question._id]}
+            onChange={(value) => {
+              setResponses(prev => ({
+                ...prev,
+                [question._id]: value
+              }));
+            }}
+            isPreview={true}
+          />
+        ))}
       </ScrollView>
-
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-          <Text style={styles.submitButtonText}>Submit</Text>
-        </TouchableOpacity>
-      </View>
+      <SubmitButton 
+        onPress={handleSubmit}
+        disabled={isSubmitting}
+      />
     </View>
   );
 };

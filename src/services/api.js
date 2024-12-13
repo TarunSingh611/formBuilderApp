@@ -48,6 +48,9 @@ export const formAPI = {
   submitResponse: (formId, responses) => api.post(`/forms/${formId}/responses`, { answers: responses }),
   getFormResponses: (formId) => api.get(`/forms/${formId}/responses`),
   getFormAnalytics: (formId) => api.get(`/forms/${formId}/analytics`),
+  saveProgress: (formId, responses) => api.post(`/forms/${formId}/progress`, { responses }),
+  getProgress: (formId) => api.get(`/forms/${formId}/progress`),
+  submitResponse: (formId, responses) => api.post(`/forms/${formId}/responses`, { responses }),
 };
 
 // Upload API calls
